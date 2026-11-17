@@ -83,7 +83,7 @@ el('aircraft').onchange=()=>{el('aircraft-info').textContent=aircraftProfiles[el
 let joystickPointer=null,joystickVector={x:0,y:0};
 function clearTouchButtons(){joystickPointer=null;joystickVector={x:0,y:0};const knob=el('joystick-knob');if(knob)knob.style.transform='translate(0px,0px)';}
 const joystick=el('joystick');
-function moveJoystick(e){const r=joystick.getBoundingClientRect(),radius=48,dx=e.clientX-r.left-r.width/2,dy=e.clientY-r.top-r.height/2,d=Math.hypot(dx,dy),factor=d>radius?radius/d:1;const x=dx*factor,y=dy*factor;joystickVector={x:Math.abs(x)<6?0:x/radius,y:Math.abs(y)<6?0:y/radius};el('joystick-knob').style.transform=`translate(${x}px,${y}px)`;}
+function moveJoystick(e){const r=joystick.getBoundingClientRect(),radius=48,dx=e.clientX-r.left-r.width/2,dy=e.clientY-r.top-r.height/2,d=Math.hypot(dx,dy),factor=d>radius?radius/d:1;const x=dx*factor,y=dy*factor;const distance=Math.hypot(x,y),strength=distance<=6?0:.8*Math.pow((distance-6)/(radius-6),1.5);joystickVector={x:distance?x/distance*strength:0,y:distance?y/distance*strength:0};el('joystick-knob').style.transform=`translate(${x}px,${y}px)`;}
 joystick.addEventListener('pointerdown',e=>{if(joystickPointer!==null||state!=='playing')return;e.preventDefault();joystickPointer=e.pointerId;joystick.setPointerCapture(e.pointerId);moveJoystick(e);});
 joystick.addEventListener('pointermove',e=>{if(e.pointerId!==joystickPointer)return;e.preventDefault();moveJoystick(e);});
 for(const event of ['pointerup','pointercancel','lostpointercapture'])joystick.addEventListener(event,e=>{if(e.pointerId===joystickPointer)clearTouchButtons();});
