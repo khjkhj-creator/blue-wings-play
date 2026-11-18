@@ -81,15 +81,12 @@ function awardStageBonus(){const seconds=Math.max(0,elapsed-stageStarted);const 
 
 el('aircraft').onchange=()=>{el('aircraft-info').textContent=aircraftProfiles[el('aircraft').value].info+(state==='playing'||state==='paused'?' · 다음 출격부터 적용':'');if(state!=='playing'&&state!=='paused'){aircraftType=el('aircraft').value;}};
 
-let joystickPointer=null,joystickVector={x:0,y:0};
-function clearTouchButtons(){joystickPointer=null;joystickVector={x:0,y:0};const knob=el('joystick-knob');if(knob)knob.style.transform='translate(0px,0px)';}
-const joystick=el('joystick');
-function moveJoystick(e){const r=joystick.getBoundingClientRect(),radius=48,dx=e.clientX-r.left-r.width/2,dy=e.clientY-r.top-r.height/2,d=Math.hypot(dx,dy),factor=d>radius?radius/d:1;const x=dx*factor,y=dy*factor;const distance=Math.hypot(x,y),strength=distance<=6?0:.8*Math.pow((distance-6)/(radius-6),1.5);joystickVector={x:distance?x/distance*strength:0,y:distance?y/distance*strength:0};el('joystick-knob').style.transform=`translate(${x}px,${y}px)`;}
-joystick.addEventListener('pointerdown',e=>{if(joystickPointer!==null||state!=='playing')return;e.preventDefault();joystickPointer=e.pointerId;joystick.setPointerCapture(e.pointerId);moveJoystick(e);});
-joystick.addEventListener('pointermove',e=>{if(e.pointerId!==joystickPointer)return;e.preventDefault();moveJoystick(e);});
-for(const event of ['pointerup','pointercancel','lostpointercapture'])joystick.addEventListener(event,e=>{if(e.pointerId===joystickPointer)clearTouchButtons();});
-joystick.addEventListener('contextmenu',e=>e.preventDefault());window.addEventListener('blur',clearTouchButtons);document.addEventListener('visibilitychange',()=>{if(document.hidden)clearTouchButtons();});
-
+let joystickPointer=null,joystickVector={x:0,y:0},dragLast=null;
+function clearTouchButtons(){joystickPointer=null;joystickVector={x:0,y:0};dragLast=null;}
+canvas.addEventListener('pointerdown',e=>{if(e.pointerType==='mouse'||state!=='playing'||joystickPointer!==null)return;e.preventDefault();joystickPointer=e.pointerId;dragLast={x:e.clientX,y:e.clientY};canvas.setPointerCapture(e.pointerId);});
+canvas.addEventListener('pointermove',e=>{if(e.pointerId!==joystickPointer||!dragLast)return;e.preventDefault();if(state!=='playing'){clearTouchButtons();return;}const r=canvas.getBoundingClientRect(),dx=(e.clientX-dragLast.x)/r.width*W*.8,dy=(e.clientY-dragLast.y)/r.height*H*.8;player.x=Math.max(30,Math.min(W-30,player.x+dx));player.y=Math.max(200,Math.min(H-38,player.y+dy));dragLast={x:e.clientX,y:e.clientY};});
+for(const event of ['pointerup','pointercancel','lostpointercapture'])canvas.addEventListener(event,e=>{if(e.pointerId===joystickPointer)clearTouchButtons();});
+canvas.addEventListener('contextmenu',e=>e.preventDefault());window.addEventListener('blur',clearTouchButtons);document.addEventListener('visibilitychange',()=>{if(document.hidden)clearTouchButtons();});
 function bombDamage(amount){for(const e of [...enemies]){if(e.dead||(e.bossStage===3&&e.readyTime<3))continue;const fraction=amount===22?.12:amount===110?.4:.3;const bossFraction=amount===22?.025:amount===110?.08:.06;e.hp-=e.max*(e.kind==='boss'?bossFraction:fraction);e.flash=.2;if(e.hp<=0)kill(e);if(state!=='playing'||transitionTime>0)break;}}
 function useBomb(){if(state!=='playing'||bombs<=0||bombTime>0||transitionTime>0)return;bombs--;bombTime=2.8;bombPulse=0;invincible=Math.max(invincible,3.2);shots=[];notice=({balanced:'청룡 · 천공 폭격',spread:'홍익 · 삼중 충격파',heavy:'철갑 · 중폭탄 투하'})[aircraftType];noticeTime=2.8;if(aircraftType!=='spread')bombDamage(aircraftType==='heavy'?110:70);hud();}
 el('bomb-mobile').onclick=e=>{e.preventDefault();useBomb();};
